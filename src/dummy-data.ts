@@ -57,7 +57,7 @@ export class DummyDataGenerator {
 
     const result: any = {};
     
-    for (const [key, prop] of Object.entries(schema.properties as any)) {
+    for (const [key, prop] of Object.entries(schema.properties as Record<string, any>)) {
       result[key] = this.generateValue(key, prop.type, prop.format);
     }
     
