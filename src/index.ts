@@ -2,6 +2,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { RouteExtractor } from './route-extractor';
 import { PostmanGenerator } from './generator';
 import { PostmanSync } from './postman-sync';
+import { mergeCollections } from './collection-merge';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -18,6 +19,8 @@ export interface PostmanAutoOptions {
   baseUrl?: string;
   /** Auto-sync on route changes */
   autoSync?: boolean;
+  /** Sync mode for Postman Cloud updates */
+  syncMode?: 'merge' | 'overwrite';
   /** Enable debug logging */
   debug?: boolean;
 }
@@ -33,6 +36,7 @@ export function postmanAuto(options: PostmanAutoOptions = {}) {
     collectionName = 'API Collection',
     baseUrl = 'http://localhost:3000',
     autoSync = false,
+    syncMode = 'merge',
     postmanApiKey,
     collectionId,
     debug = false
@@ -71,10 +75,21 @@ export function postmanAuto(options: PostmanAutoOptions = {}) {
           console.log(`✅ Postman collection saved to: ${outputPath}`);
         }
 
-        // Sync to Postman Cloud
-        if (postmanApiKey && collectionId) {
+        // Sync to Postman Cloud only when explicitly enabled
+        if (autoSync && postmanApiKey && collectionId) {
           const sync = new PostmanSync(postmanApiKey);
-          await sync.updateCollection(collectionId, collection);
+          let collectionToSync = collection;
+
+          if (syncMode === 'merge') {
+            try {
+              const existing = await sync.getCollection(collectionId);
+              collectionToSync = mergeCollections(existing, collection);
+            } catch (error) {
+              console.warn('⚠️  Could not fetch existing collection, using generated data only');
+            }
+          }
+
+          await sync.updateCollection(collectionId, collectionToSync);
           console.log('☁️  Collection synced to Postman Cloud');
         }
 
