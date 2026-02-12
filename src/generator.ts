@@ -35,15 +35,15 @@ export class PostmanGenerator {
 
   private getOrCreateFolder(path: string): ItemGroup<Item> | Collection {
     const parts = path.split('/').filter(p => p && !p.startsWith(':'));
-    
+
     if (parts.length === 0) return this.collection;
 
     let currentFolder: ItemGroup<Item> | Collection = this.collection;
     let currentPath = '';
 
-    for (const part of parts.slice(0, -1)) {
+    for (const part of parts) {
       currentPath += '/' + part;
-      
+
       if (!this.folderMap.has(currentPath)) {
         const newFolder = new ItemGroup<Item>({ name: part });
         currentFolder.items.add(newFolder as any);
